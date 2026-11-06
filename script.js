@@ -1,6 +1,10 @@
 
 const canvas = document.getElementById("heartCanvas");
 const ctx = canvas.getContext("2d");
+const playButton = document.getElementById("playButton");
+const startScreen = document.getElementById("startScreen");
+
+let started = false;
 
 // PERSONALIZE THESE
 const NAME = "Bubba!";
@@ -10,6 +14,7 @@ const MESSAGE = "Always smile for me!";
 const song = document.getElementById("song");
 const CHORUS_START = 52;
 const CHORUS_END = 91;
+
 
 // SETTINGS
 const PARTICLE_COUNT = 2500;
@@ -281,9 +286,48 @@ if (song) {
 resizeCanvas();
 generateHeart();
 
+// START SURPRISE
+playButton.addEventListener("click", async () => {
+    if (started) return;
+
+    started = true;
+    playButton.disabled = true;
+
+    try {
+        song.currentTime = CHORUS_START;
+        await song.play();
+
+        // Hide the opening screen
+        startScreen.style.opacity = "0";
+
+        setTimeout(() => {
+            startScreen.style.display = "none";
+        }, 1200);
+
+        // Start the animation
+        frame = 0;
+        requestAnimationFrame(draw);
+
+        console.log("Surprise started!");
+
+    } catch (error) {
+        started = false;
+        playButton.disabled = false;
+
+        console.error("Playback failed:", error);
+    }
+});
+
+// STOP AT END OF CHORUS
+song.addEventListener("timeupdate", () => {
+    if (song.currentTime >= CHORUS_END) {
+        song.pause();
+        song.currentTime = CHORUS_END;
+    }
+});
+
+// HANDLE RESIZING
 window.addEventListener("resize", () => {
     resizeCanvas();
     generateHeart();
 });
-
-requestAnimationFrame(draw);
