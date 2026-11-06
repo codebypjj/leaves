@@ -81,3 +81,63 @@ canvas {
     background: rgba(185, 154, 255, 0.12);
     box-shadow: 0 0 25px rgba(185, 154, 255, 0.5);
 }
+
+/* ENDING SCREEN */
+#endScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+
+    display: none;
+    justify-content: center;
+    align-items: center;
+
+    background: rgba(3, 0, 3, 0.92);
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+
+.end-content {
+    text-align: center;
+    padding: 24px;
+}
+
+#endButtons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+#endScreen button {
+    padding: 14px 28px;
+    border: 1px solid #B99AFF;
+    border-radius: 50px;
+
+    background: transparent;
+    color: white;
+
+    font-family: Georgia, serif;
+    font-size: 16px;
+    cursor: pointer;
+
+    box-shadow: 0 0 15px rgba(185, 154, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+#endScreen button:hover {
+    background: rgba(185, 154, 255, 0.15);
+    box-shadow: 0 0 25px rgba(185, 154, 255, 0.5);
+}
+
+#closeMessage {
+    display: none;
+    max-width: 320px;
+    margin: 0 auto;
+
+    color: #B99AFF;
+    font-family: Georgia, serif;
+    font-size: 22px;
+    line-height: 1.6;
+    text-shadow: 0 0 15px rgba(185, 154, 255, 0.5);
+}

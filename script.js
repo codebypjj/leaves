@@ -1,26 +1,28 @@
 
 const canvas = document.getElementById("heartCanvas");
 const ctx = canvas.getContext("2d");
+
+const song = document.getElementById("song");
 const playButton = document.getElementById("playButton");
 const startScreen = document.getElementById("startScreen");
 
-let started = false;
+const endScreen = document.getElementById("endScreen");
+const replayButton = document.getElementById("replayButton");
+const closeButton = document.getElementById("closeButton");
+const endButtons = document.getElementById("endButtons");
 
 // PERSONALIZE THESE
 const NAME = "Bubba!";
 const MESSAGE = "Always smile for me!";
 
 // AUDIO
-const song = document.getElementById("song");
 const CHORUS_START = 52;
 const CHORUS_END = 91;
-
 
 // SETTINGS
 const PARTICLE_COUNT = 2500;
 const FORMATION_SPEED = 900;
 const HEART_FADE_IN = 120;
-const HEART_FADE_OUT = 120;
 
 const colors = [
     "#5426A8",
@@ -33,12 +35,17 @@ const colors = [
 let frame = 0;
 let heartItems = [];
 let lastDrawn = 0;
+
 let particleCanvas;
 let particleCtx;
 
+let started = false;
+let isAnimating = false;
+let animationId = null;
+let finished = false;
+
+
 // GENERATE CLASSIC VALENTINE HEART
-
-
 function generateHeart() {
     heartItems = [];
 
@@ -61,20 +68,14 @@ function generateHeart() {
         heartItems.push({
             x,
             y,
-
             startX: Math.cos(direction) * distance,
             startY: Math.sin(direction) * distance,
-
-            color: colors[
-                Math.floor(Math.random() * colors.length)
-            ],
-
+            color: colors[Math.floor(Math.random() * colors.length)],
             size: 7 + Math.random() * 3,
             rotation: (Math.random() - 0.5) * 0.2
         });
     }
 }
-
 
 
 // CANVAS SETUP
@@ -97,6 +98,7 @@ function resizeCanvas() {
 
     createParticleCanvas();
 }
+
 
 // DRAW PARTICLES
 function addParticles(start, end) {
@@ -134,7 +136,6 @@ No, you never really love someone until you learn to forgive`;
 
         particleCtx.font = `bold ${item.size + 2}px Georgia`;
         particleCtx.fillStyle = item.color;
-
         particleCtx.textAlign = "center";
         particleCtx.textBaseline = "middle";
 
@@ -146,7 +147,6 @@ No, you never really love someone until you learn to forgive`;
         particleCtx.restore();
     }
 }
-
 
 
 // MAIN ANIMATION
@@ -218,20 +218,17 @@ function draw() {
             lastDrawn = visibleCount;
         }
 
-        // FADE IN
         const fadeIn = Math.min(
             (frame - 145) / HEART_FADE_IN,
             1
         );
 
-        // FADE OUT WHEN CHORUS ENDS
-        const fadeOut = song && song.currentTime >= CHORUS_END - 2
+        const fadeOut = song.currentTime >= CHORUS_END - 2
             ? Math.max(0, (CHORUS_END - song.currentTime) / 2)
             : 1;
 
         const opacity = Math.min(fadeIn, fadeOut);
 
-        // GENTLE HEARTBEAT
         const pulse = 1 + 0.025 * Math.sin(frame * 0.065);
 
         ctx.save();
@@ -254,77 +251,147 @@ function draw() {
     }
 
     frame++;
-    requestAnimationFrame(draw);
+
+    if (isAnimating) {
+        animationId = requestAnimationFrame(draw);
+    }
 }
 
-// AUDIO PLAYBACK
-if (song) {
-    song.addEventListener("loadedmetadata", async () => {
+
+// SHOW ENDING SCREEN
+function showEnding() {
+    finished = true;
+    isAnimating = false;
+
+    if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+    }
+
+    song.pause();
+    song.currentTime = CHORUS_END;
+
+    endButtons.style.display = "flex";
+
+    endScreen.style.display = "flex";
+
+    requestAnimationFrame(() => {
+        endScreen.style.opacity = "1";
+    });
+}
+
+
+// HIDE ENDING SCREEN
+function hideEnding() {
+    endScreen.style.opacity = "0";
+    endScreen.style.display = "none";
+}
+
+
+// RESET ANIMATION
+function resetAnimation() {
+    frame = 0;
+    lastDrawn = 0;
+
+    particleCtx.clearRect(
+        0,
+        0,
+        particleCanvas.width,
+        particleCanvas.height
+    );
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+}
+
+
+// START OR REPLAY SURPRISE
+async function startSurprise() {
+    try {
+        finished = false;
+
+        hideEnding();
+
+        endButtons.style.display = "flex";
+
+        resetAnimation();
+
         song.currentTime = CHORUS_START;
+        await song.play();
 
-        try {
-            await song.play();
-            console.log("Song started!");
-        } catch (error) {
-            console.error("Autoplay failed:", error.name, error.message);
+        isAnimating = true;
+        animationId = requestAnimationFrame(draw);
+
+        console.log("Surprise started!");
+
+    } catch (error) {
+        isAnimating = false;
+
+        console.error("Playback failed:", error);
+
+        if (!started) {
+            started = false;
+            playButton.disabled = false;
         }
-    });
-
-    song.addEventListener("timeupdate", () => {
-        if (song.currentTime >= CHORUS_END) {
-            song.pause();
-            song.currentTime = CHORUS_END;
-        }
-    });
-
-    song.addEventListener("error", () => {
-        console.error("Audio loading error:", song.error);
-    });
+    }
 }
+
 
 // INITIALIZE
 resizeCanvas();
 generateHeart();
 
-// START SURPRISE
+
+// FIRST PLAY BUTTON
 playButton.addEventListener("click", async () => {
     if (started) return;
 
     started = true;
     playButton.disabled = true;
 
-    try {
-        song.currentTime = CHORUS_START;
-        await song.play();
+    await startSurprise();
 
-        // Hide the opening screen
-        startScreen.style.opacity = "0";
+    if (!isAnimating) return;
 
-        setTimeout(() => {
-            startScreen.style.display = "none";
-        }, 1200);
+    startScreen.style.opacity = "0";
 
-        // Start the animation
-        frame = 0;
-        requestAnimationFrame(draw);
-
-        console.log("Surprise started!");
-
-    } catch (error) {
-        started = false;
-        playButton.disabled = false;
-
-        console.error("Playback failed:", error);
-    }
+    setTimeout(() => {
+        startScreen.style.display = "none";
+    }, 1200);
 });
 
-// STOP AT END OF CHORUS
+
+// REPLAY BUTTON
+replayButton.addEventListener("click", async () => {
+    await startSurprise();
+});
+
+
+// CLOSE BUTTON
+closeButton.addEventListener("click", () => {
+    hideEnding();
+});
+
+
+// STOP SONG AND SHOW ENDING
 song.addEventListener("timeupdate", () => {
-    if (song.currentTime >= CHORUS_END) {
-        song.pause();
-        song.currentTime = CHORUS_END;
+    if (
+        !finished &&
+        song.currentTime >= CHORUS_END
+    ) {
+        showEnding();
     }
 });
+
+
+// AUDIO ERROR
+song.addEventListener("error", () => {
+    console.error("Audio loading error:", song.error);
+});
+
 
 // HANDLE RESIZING
 window.addEventListener("resize", () => {
