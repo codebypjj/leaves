@@ -271,7 +271,6 @@ function showEnding() {
     song.currentTime = CHORUS_END;
 
     endButtons.style.display = "flex";
-
     endScreen.style.display = "flex";
 
     requestAnimationFrame(() => {
