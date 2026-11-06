@@ -260,6 +260,7 @@ function draw() {
 
 // SHOW ENDING SCREEN
 function showEnding() {
+    console.log("ENDING SCREEN TRIGGERED!");
     finished = true;
     isAnimating = false;
 
@@ -377,10 +378,13 @@ closeButton.addEventListener("click", () => {
 
 // STOP SONG AND SHOW ENDING
 song.addEventListener("timeupdate", () => {
-    if (
-        !finished &&
-        song.currentTime >= CHORUS_END
-    ) {
+    if (!finished && song.currentTime >= CHORUS_END - 0.1) {
+        showEnding();
+    }
+});
+
+song.addEventListener("ended", () => {
+    if (!finished) {
         showEnding();
     }
 });
